@@ -42,12 +42,40 @@
       background-color: #ffe0e0;
       margin: 10px 0;
     }
+
+    .hidden {
+      display: none;
+    }
+
+    .debug-info {
+      padding: 10px;
+      background-color: #e0ffe0;
+      color: green;
+      font-family: monospace;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
   </style>
 </head>
 
 <body>
+  <div id="debug-container"></div>
   <div id="error-container"></div>
+  <div id="video-container" class="hidden">
+    <div class="container" id="container">
+      <div class="video" id="player"></div>
+    </div>
+  </div>
+
   <script>
+    function showDebugInfo(message) {
+      const debugContainer = document.getElementById('debug-container');
+      const debugElement = document.createElement('div');
+      debugElement.className = 'debug-info';
+      debugElement.textContent = message;
+      debugContainer.appendChild(debugElement);
+    }
+
     function showError(message) {
       const errorContainer = document.getElementById('error-container');
       const errorElement = document.createElement('div');
@@ -57,26 +85,17 @@
     }
 
     try {
-      document.write(
-        `<div class="container" ${containerStyle ? `style="${containerStyle}"` : ''
-        }>`
-      );
-    } catch (error) {
-      showError('Error applying container style: ' + error.message);
-    }
-  </script>
-  <div class="video" id="player"></div>
-  </div>
-
-  <script>
-    const randomPlayerId = 'player' + Date.now();
-    document.getElementById('player').id = randomPlayerId;
-
-    try {
       const fullUrl = window.location.href;
-      alert('Full URL: ' + fullUrl);  // Add this line
-      showError('Debug: Full URL: ' + fullUrl);
+      showDebugInfo('Full URL:\n' + fullUrl);
       
+      // Parse URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const allParams = {};
+      for (const [key, value] of urlParams) {
+        allParams[key] = value;
+      }
+      showDebugInfo('All URL parameters:\n' + JSON.stringify(allParams, null, 2));
+
       // Handle the case with two question marks
       const parts = fullUrl.split('?');
       const lastPart = parts[parts.length - 1];
