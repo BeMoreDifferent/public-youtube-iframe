@@ -6,6 +6,7 @@
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     const isFullscreen = urlParams.get('fullscreen') === 'true';
+    const isShorts = urlParams.get('isShorts') === 'true';
 
     let containerStyle = '';
     if (isFullscreen) {
@@ -49,6 +50,10 @@
       font-family: monospace;
       white-space: pre-wrap;
       word-break: break-all;
+    }
+
+    .container.shorts {
+      padding-bottom: 177.78%; /* 9:16 aspect ratio for vertical videos */
     }
   </style>
 </head>
@@ -180,34 +185,45 @@
       var player;
       function onYouTubeIframeAPIReady() {
         const containerElement = document.querySelector('.container');
+        if (isShorts) {
+          containerElement.classList.add('shorts');
+        }
         const containerWidth = containerElement.clientWidth;
         const containerHeight = containerElement.clientHeight;
 
         // Define a fixed player ID
         const playerId = 'player';
 
+        const playerVars = {
+          end: end,
+          rel: rel_s,
+          list: list,
+          color: color,
+          loop: loop_s,
+          start: start,
+          playsinline: 1,
+          hl: playerLang,
+          playlist: playlist,
+          listType: listType,
+          controls: controls_s,
+          fs: preventFullScreen_s,
+          cc_lang_pref: cc_lang_pref_s,
+          iv_load_policy: iv_load_policy,
+          modestbranding: modestbranding_s,
+          cc_load_policy: showClosedCaptions_s,
+        };
+
+        // Add shorts-specific parameters
+        if (isShorts) {
+          playerVars.loop = 1; // Always loop shorts
+          playerVars.playlist = videoId_s; // Required for looping a single video
+        }
+
         player = new YT.Player(playerId, {
           width: containerWidth,
           height: containerHeight,
           videoId: videoId_s,
-          playerVars: {
-            end: end,
-            rel: rel_s,
-            list: list,
-            color: color,
-            loop: loop_s,
-            start: start,
-            playsinline: 1,
-            hl: playerLang,
-            playlist: playlist,
-            listType: listType,
-            controls: controls_s,
-            fs: preventFullScreen_s,
-            cc_lang_pref: cc_lang_pref_s,
-            iv_load_policy: iv_load_policy,
-            modestbranding: modestbranding_s,
-            cc_load_policy: showClosedCaptions_s,
-          },
+          playerVars: playerVars,
           events: {
             onReady: onPlayerReady,
             onError: onPlayerError,
@@ -219,7 +235,26 @@
       }
 
       function onPlayerError(event) {
-        sendMessageToRN({ eventType: 'playerError', data: event.data });
+        let errorMessage = 'An error occurred';
+        switch (event.data) {
+          case 2:
+            errorMessage = 'Invalid parameter';
+            break;
+          case 5:
+            errorMessage = 'HTML5 player error';
+            break;
+          case 100:
+            errorMessage = 'Video not found or removed';
+            break;
+          case 101:
+          case 150:
+            errorMessage = 'Video playback not allowed';
+            break;
+        }
+        if (isShorts) {
+          errorMessage += ' (Shorts format)';
+        }
+        sendMessageToRN({ eventType: 'playerError', data: event.data, message: errorMessage });
       }
 
       function onPlaybackRateChange(event) {
