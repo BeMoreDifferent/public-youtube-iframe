@@ -164,9 +164,13 @@
 
       var player;
       function onYouTubeIframeAPIReady() {
+        const containerElement = document.querySelector('.container');
+        const containerWidth = containerElement.clientWidth;
+        const containerHeight = containerElement.clientHeight;
+
         player = new YT.Player(randomPlayerId, {
-          width: '1000',
-          height: '1000',
+          width: containerWidth,
+          height: containerHeight,
           videoId: videoId_s,
           playerVars: {
             end: end,
@@ -269,6 +273,16 @@
           }
         } catch (error) {
           console.error('Error parsing data', event, error);
+        }
+      });
+
+      // Add a resize event listener to adjust the player size when the window is resized
+      window.addEventListener('resize', function() {
+        if (player && player.setSize) {
+          const containerElement = document.querySelector('.container');
+          const containerWidth = containerElement.clientWidth;
+          const containerHeight = containerElement.clientHeight;
+          player.setSize(containerWidth, containerHeight);
         }
       });
     } catch (error) {
