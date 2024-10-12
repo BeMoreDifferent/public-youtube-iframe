@@ -17,7 +17,6 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
     }
 
     .container {
@@ -36,21 +35,89 @@
     }
 
     .container.shorts {
-      padding-bottom: 177.78%;
+      padding-bottom: 177.78%; /* 9:16 aspect ratio for vertical videos */
     }
   </style>
 </head>
 
 <body>
-  <div id="video-container">
     <div class="container" id="container">
       <div class="video" id="player"></div>
-    </div>
   </div>
-
   <script>
+    function showDebugInfo(message) {
+
+    }
+
+    function showError(message) {
+
+    }
+
     try {
-      // ... (URL parsing and data extraction code remains unchanged)
+      const fullUrl = window.location.href;
+      
+      // Parse URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const allParams = {};
+      for (const [key, value] of urlParams) {
+        allParams[key] = value;
+      }
+      // Handle the case with two question marks
+      const parts = fullUrl.split('?');
+      const lastPart = parts[parts.length - 1];
+      const dataParam = lastPart.startsWith('data=') ? lastPart : null;
+
+      let UrlQueryData;
+      if (dataParam) {
+        UrlQueryData = decodeURIComponent(dataParam.slice(5)); // Remove 'data=' prefix and decode
+      } else {
+        // If not found with two question marks, try normal URL parsing
+        const parsedUrl = new URL(fullUrl);
+        const urlParams = new URLSearchParams(parsedUrl.search);
+        UrlQueryData = urlParams.get('data');
+        
+        if (!UrlQueryData) {
+          throw new Error('No data parameter found in URL');
+        }
+        UrlQueryData = decodeURIComponent(UrlQueryData); // Decode the URL-encoded data
+      }
+
+      let parsedData;
+      try {
+        parsedData = JSON.parse(UrlQueryData);
+      } catch (jsonError) {
+        throw new Error(`Failed to parse JSON data: ${jsonError.message}`);
+      }
+      
+      if (!parsedData || typeof parsedData !== 'object') {
+        throw new Error('Parsed data is not a valid object');
+      }
+
+      const {
+        end,
+        list,
+        color,
+        start,
+        rel_s,
+        loop_s,
+        listType,
+        playerLang,
+        playlist,
+        videoId_s,
+        controls_s,
+        cc_lang_pref_s,
+        contentScale_s,
+        allowWebViewZoom,
+        modestbranding_s,
+        iv_load_policy,
+        preventFullScreen_s,
+        showClosedCaptions_s,
+      } = parsedData;
+
+      // Check if required properties are present
+      if (!videoId_s) {
+        throw new Error('videoId_s is required but not provided in the data');
+      }
 
       function sendMessageToRN(msg) {
         if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
@@ -58,7 +125,16 @@
         }
       }
 
-      // ... (viewport meta tag update code remains unchanged)
+      let metaString = '';
+      if (contentScale_s) {
+        metaString += `initial-scale=${contentScale_s}, `;
+      }
+      if (!allowWebViewZoom) {
+        metaString += `maximum-scale=${contentScale_s}`;
+      }
+
+      const viewport = document.querySelector('meta[name=viewport]');
+      viewport.setAttribute('content', 'width=device-width, ' + metaString);
 
       var tag = document.createElement('script');
       tag.src = 'https://www.youtube.com/iframe_api';
@@ -68,33 +144,45 @@
       var player;
       function onYouTubeIframeAPIReady() {
         const containerElement = document.querySelector('.container');
+        if (isShorts) {
+          containerElement.classList.add('shorts');
+        }
         const containerWidth = containerElement.clientWidth;
         const containerHeight = containerElement.clientHeight;
 
+        // Define a fixed player ID
         const playerId = 'player' + Date.now();
+
+        const playerVars = {
+          end: end,
+          rel: rel_s,
+          list: list,
+          color: color,
+          loop: loop_s,
+          start: start,
+          playsinline: 1,
+          hl: playerLang,
+          playlist: playlist,
+          listType: listType,
+          controls: controls_s,
+          fs: preventFullScreen_s,
+          cc_lang_pref: cc_lang_pref_s,
+          iv_load_policy: iv_load_policy,
+          modestbranding: modestbranding_s,
+          cc_load_policy: showClosedCaptions_s,
+        };
+
+        // Add shorts-specific parameters
+        if (isShorts) {
+          playerVars.loop = 1; // Always loop shorts
+          playerVars.playlist = videoId_s; // Required for looping a single video
+        }
 
         player = new YT.Player(playerId, {
           width: containerWidth,
           height: containerHeight,
           videoId: videoId_s,
-          playerVars: {
-            end: end,
-            rel: rel_s,
-            list: list,
-            color: color,
-            loop: loop_s,
-            start: start,
-            playsinline: 1,
-            hl: playerLang,
-            playlist: playlist,
-            listType: listType,
-            controls: controls_s,
-            fs: preventFullScreen_s,
-            cc_lang_pref: cc_lang_pref_s,
-            iv_load_policy: iv_load_policy,
-            modestbranding: modestbranding_s,
-            cc_load_policy: showClosedCaptions_s,
-          },
+          playerVars: playerVars,
           events: {
             onReady: onPlayerReady,
             onError: onPlayerError,
@@ -107,7 +195,24 @@
 
       function onPlayerError(event) {
         let errorMessage = 'An error occurred';
-        // ... (error handling code remains unchanged)
+        switch (event.data) {
+          case 2:
+            errorMessage = 'Invalid parameter';
+            break;
+          case 5:
+            errorMessage = 'HTML5 player error';
+            break;
+          case 100:
+            errorMessage = 'Video not found or removed';
+            break;
+          case 101:
+          case 150:
+            errorMessage = 'Video playback not allowed';
+            break;
+        }
+        if (isShorts) {
+          errorMessage += ' (Shorts format)';
+        }
         sendMessageToRN({ eventType: 'playerError', data: event.data, message: errorMessage });
       }
 
@@ -129,7 +234,12 @@
 
       var isFullScreen = false;
       function onFullScreenChange() {
-        // ... (fullscreen detection code remains unchanged)
+        isFullScreen =
+          document.fullscreenElement ||
+          document.msFullscreenElement ||
+          document.mozFullScreenElement ||
+          document.webkitFullscreenElement;
+
         sendMessageToRN({
           eventType: 'fullScreenChange',
           data: Boolean(isFullScreen),
