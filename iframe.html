@@ -35,52 +35,38 @@
     }
 
     .container.shorts {
-      padding-bottom: 177.78%; /* 9:16 aspect ratio for vertical videos */
+      padding-bottom: 177.78%;
+      /* 9:16 aspect ratio for vertical videos */
     }
   </style>
 </head>
 
 <body>
-    <div class="container" id="container">
-      <div class="video" id="player"></div>
+  <div class="container" id="container">
+    <div class="video" id="player"></div>
   </div>
   <script>
-    function showDebugInfo(message) {
-
-    }
-
-    function showError(message) {
-
-    }
-
     try {
       const fullUrl = window.location.href;
-      
-      // Parse URL parameters
-      const urlParams = new URLSearchParams(window.location.search);
-      const allParams = {};
-      for (const [key, value] of urlParams) {
-        allParams[key] = value;
-      }
-      // Handle the case with two question marks
-      const parts = fullUrl.split('?');
-      const lastPart = parts[parts.length - 1];
-      const dataParam = lastPart.startsWith('data=') ? lastPart : null;
 
-      let UrlQueryData;
-      if (dataParam) {
-        UrlQueryData = decodeURIComponent(dataParam.slice(5)); // Remove 'data=' prefix and decode
-      } else {
-        // If not found with two question marks, try normal URL parsing
-        const parsedUrl = new URL(fullUrl);
-        const urlParams = new URLSearchParams(parsedUrl.search);
-        UrlQueryData = urlParams.get('data');
-        
-        if (!UrlQueryData) {
-          throw new Error('No data parameter found in URL');
-        }
-        UrlQueryData = decodeURIComponent(UrlQueryData); // Decode the URL-encoded data
+      // Split the URL by '?data=' to isolate the data parameter
+      const parts = fullUrl.split('?data=');
+      if (parts.length < 2) {
+        throw new Error('No data parameter found in URL');
       }
+
+      // The last part should be our data, possibly followed by additional parameters
+      let dataAndExtra = parts[parts.length - 1];
+
+      // Remove any additional parameters after the data
+      const extraParamIndex = dataAndExtra.indexOf('&');
+      if (extraParamIndex !== -1) {
+        dataAndExtra = dataAndExtra.substring(0, extraParamIndex);
+      }
+
+      // Decode the URL-encoded data
+      const UrlQueryData = decodeURIComponent(dataAndExtra);
+
 
       let parsedData;
       try {
@@ -88,10 +74,11 @@
       } catch (jsonError) {
         throw new Error(`Failed to parse JSON data: ${jsonError.message}`);
       }
-      
+
       if (!parsedData || typeof parsedData !== 'object') {
         throw new Error('Parsed data is not a valid object');
       }
+
 
       const {
         end,
@@ -147,11 +134,14 @@
         if (isShorts) {
           containerElement.classList.add('shorts');
         }
+        if (isFullscreen) {
+          containerElement.style.cssText = containerStyle;
+        }
         const containerWidth = containerElement.clientWidth;
         const containerHeight = containerElement.clientHeight;
 
         // Define a fixed player ID
-        const playerId = 'player' + Date.now();
+        const playerId = 'player';
 
         const playerVars = {
           end: end,
@@ -288,7 +278,6 @@
         }
       });
     } catch (error) {
-      console.error('Detailed error:', error);
     }
   </script>
 </body>
