@@ -73,15 +73,27 @@
     document.getElementById('player').id = randomPlayerId;
 
     try {
-      const parsedUrl = new URL(window.location.href);
-      showError('Debug: Full URL: ' + window.location.href);
+      const fullUrl = window.location.href;
+      showError('Debug: Full URL: ' + fullUrl);
       
-      const UrlQueryData = parsedUrl.searchParams.get('data');
-      if (!UrlQueryData) {
-        showError('Debug: All URL parameters: ' + parsedUrl.search);
-        throw new Error('No data parameter found in URL');
+      // Handle the case with two question marks
+      const parts = fullUrl.split('?');
+      const lastPart = parts[parts.length - 1];
+      const dataParam = lastPart.startsWith('data=') ? lastPart : null;
+
+      if (!dataParam) {
+        // If not found with two question marks, try normal URL parsing
+        const parsedUrl = new URL(fullUrl);
+        const urlParams = new URLSearchParams(parsedUrl.search);
+        const UrlQueryData = urlParams.get('data');
+        
+        if (!UrlQueryData) {
+          showError('Debug: All URL parameters: ' + parsedUrl.search);
+          throw new Error('No data parameter found in URL');
+        }
       }
       
+      const UrlQueryData = dataParam ? dataParam.slice(5) : null; // Remove 'data=' prefix
       showError('Debug: Data parameter value: ' + UrlQueryData);
 
       let parsedData;
