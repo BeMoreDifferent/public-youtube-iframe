@@ -1,0 +1,20 @@
+# YouTube Iframe Embed for React Native
+
+This HTML file is an integral part of the React Native YouTube Iframe project, enabling seamless YouTube video embedding in React Native applications.
+
+## Features
+
+- Supports fullscreen mode with `fullscreen=true` URL parameter
+- Dynamically adjusts to various aspect ratios
+- Handles YouTube player events and communicates with React Native
+- Supports custom player configurations via URL parameters
+
+## Usage
+
+This file is used internally by the React Native YouTube Iframe component. For implementation details and usage in your React Native app, please refer to the main project documentation:
+
+[React Native YouTube Iframe Documentation](https://lonelycpp.github.io/react-native-youtube-iframe/)
+
+## License
+
+This project is licensed under the MIT License.
