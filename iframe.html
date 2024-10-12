@@ -81,19 +81,22 @@
       const lastPart = parts[parts.length - 1];
       const dataParam = lastPart.startsWith('data=') ? lastPart : null;
 
-      if (!dataParam) {
+      let UrlQueryData;
+      if (dataParam) {
+        UrlQueryData = decodeURIComponent(dataParam.slice(5)); // Remove 'data=' prefix and decode
+      } else {
         // If not found with two question marks, try normal URL parsing
         const parsedUrl = new URL(fullUrl);
         const urlParams = new URLSearchParams(parsedUrl.search);
-        const UrlQueryData = urlParams.get('data');
+        UrlQueryData = urlParams.get('data');
         
         if (!UrlQueryData) {
           showError('Debug: All URL parameters: ' + parsedUrl.search);
           throw new Error('No data parameter found in URL');
         }
+        UrlQueryData = decodeURIComponent(UrlQueryData); // Decode the URL-encoded data
       }
       
-      const UrlQueryData = dataParam ? dataParam.slice(5) : null; // Remove 'data=' prefix
       showError('Debug: Data parameter value: ' + UrlQueryData);
 
       let parsedData;
