@@ -74,10 +74,29 @@
 
     try {
       const parsedUrl = new URL(window.location.href);
+      showError('Debug: Full URL: ' + window.location.href);
+      
       const UrlQueryData = parsedUrl.searchParams.get('data');
       if (!UrlQueryData) {
+        showError('Debug: All URL parameters: ' + parsedUrl.search);
         throw new Error('No data parameter found in URL');
       }
+      
+      showError('Debug: Data parameter value: ' + UrlQueryData);
+
+      let parsedData;
+      try {
+        parsedData = JSON.parse(UrlQueryData);
+      } catch (jsonError) {
+        throw new Error(`Failed to parse JSON data: ${jsonError.message}`);
+      }
+      
+      if (!parsedData || typeof parsedData !== 'object') {
+        throw new Error('Parsed data is not a valid object');
+      }
+
+      showError('Debug: Parsed data: ' + JSON.stringify(parsedData, null, 2));
+
       const {
         end,
         list,
@@ -97,7 +116,12 @@
         iv_load_policy,
         preventFullScreen_s,
         showClosedCaptions_s,
-      } = JSON.parse(UrlQueryData);
+      } = parsedData;
+
+      // Check if required properties are present
+      if (!videoId_s) {
+        throw new Error('videoId_s is required but not provided in the data');
+      }
 
       function sendMessageToRN(msg) {
         if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
@@ -234,6 +258,7 @@
       });
     } catch (error) {
       showError('Error initializing player: ' + error.message);
+      console.error('Detailed error:', error);
     }
   </script>
 </body>
