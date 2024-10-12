@@ -275,16 +275,6 @@
           console.error('Error parsing data', event, error);
         }
       });
-
-      // Add a resize event listener to adjust the player size when the window is resized
-      window.addEventListener('resize', function() {
-        if (player && player.setSize) {
-          const containerElement = document.querySelector('.container');
-          const containerWidth = containerElement.clientWidth;
-          const containerHeight = containerElement.clientHeight;
-          player.setSize(containerWidth, containerHeight);
-        }
-      });
     } catch (error) {
       showError('Error initializing player: ' + error.message);
       console.error('Detailed error:', error);
